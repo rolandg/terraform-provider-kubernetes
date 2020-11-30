@@ -421,7 +421,7 @@ func testAccCheckKubernetesStatefulSetRollingOut(n string) resource.TestCheckFun
 			return err
 		}
 
-		if d.Status.Replicas == *d.Spec.Replicas {
+		if d.Status.ReadyReplicas == *d.Spec.Replicas {
 			return fmt.Errorf("StatefulSet has already rolled out")
 		}
 
@@ -436,7 +436,7 @@ func testAccCheckKubernetesStatefulSetRolledOut(n string) resource.TestCheckFunc
 			return err
 		}
 
-		if d.Status.Replicas != *d.Spec.Replicas {
+		if d.Status.ReadyReplicas != *d.Spec.Replicas {
 			return fmt.Errorf("StatefulSet is still rolling out")
 		}
 
@@ -483,12 +483,19 @@ func testAccKubernetesStatefulSetConfigBasic(name string) string {
 
       spec {
         container {
-          name  = "ss-test"
-          image = "k8s.gcr.io/pause:latest"
+          name = "ss-test"
+          image = "nginx:1.19"
 
           port {
-            container_port = "80"
-            name           = "web"
+            container_port = 80
+          }
+
+          readiness_probe {
+            initial_delay_seconds = 5
+            http_get {
+              path = "/"
+              port = 80
+            }
           }
 
           volume_mount {
@@ -523,6 +530,8 @@ func testAccKubernetesStatefulSetConfigBasic(name string) string {
       }
     }
   }
+
+  wait_for_rollout = false
 }
 `, name)
 }
